@@ -55,54 +55,66 @@ docker-compose up -d
         </dependency>
     </dependencies>
 ```
-2. create School and Student model:
+2. create Country and Province model:
 
 ```java
-@NoArgsConstructor
-@AllArgsConstructor
 @Document
 @Data
-public class School {
+public class Country {
 
     @Id
     @Indexed
     private String id;
 
-    @Searchable
+    @Indexed
     private String name;
 
     @Indexed
-    private Integer history;
-
-    @Searchable
-    private String address;
+    private Province province;
 
     @Indexed
-    private Student student;
-
-    @Indexed
-    private Set<String> subject;
-
+    private Set<String> flag;
 }
 ```
 ```java
-@NoArgsConstructor
-@AllArgsConstructor
 @Data
-public class Student {
+public class Province {
 
     @Indexed
-    private String name;
+    private String proName;
 
     @Indexed
-    private Integer age;
+    private Integer area;
 
 }
 ```
-3. create school repository and ensure scan path
+3. create country repository and service, ensure scan path
 ```java
-public interface SchoolRepository extends RedisDocumentRepository<School, String> {
+public interface CountryRepository extends RedisDocumentRepository<Country, String> {
 
+    Iterable<Country> findByProvince_ProName(String name);
+
+    Iterable<Country> findByFlag(Set<String> flag);
+}
+```
+```java
+@Service
+public class CountryService {
+    @Autowired
+    EntityStream entityStream;
+
+    public Iterable<Country> findAllCountry() {
+        return entityStream.of(Country.class)
+                .limit(10)
+                .collect(Collectors.toList());
+    }
+
+    public Iterable<Country> findByName(String name) {
+        return entityStream.of(Country.class)
+                .filter(Country$.NAME.eq(name))
+                .limit(10)
+                .collect(Collectors.toList());
+    }
 }
 ```
 ```java
@@ -122,14 +134,46 @@ public class RedisSearchSpringbootApplication {
 class RedisSearchSpringbootApplicationTests {
 
     @Autowired
-    private SchoolRepository schoolRepository;
+    private CountryRepository countryRepository;
+    @Autowired
+    private CountryService countryService;
 
     @Test
-    void initData() {
-        Student zhangsan = new Student("张三", 18);
-        School school = new School("1001", "青岛科技大学", 50, "青岛市", zhangsan, Set.of("机械", "化工"));
+    void initCountry() {
+        countryRepository.deleteAll();
 
-        schoolRepository.save(school);
+        Country c1 = new Country();
+        Province p1 = new Province();
+        p1.setProName("shanghai");
+        p1.setArea(100);
+        c1.setName("china");
+        c1.setProvince(p1);
+        c1.setFlag(Set.of("a", "b", "c"));
+
+        Country c2 = new Country();
+        Province p2 = new Province();
+        p2.setProName("beijing");
+        p2.setArea(200);
+        c2.setName("china2");
+        c2.setProvince(p2);
+        c2.setFlag(Set.of("d", "e", "f"));
+
+        countryRepository.saveAll(List.of(c1, c2));
+    }
+
+    @Test
+    void testCountry() {
+        Iterable<Country> shanghai = countryRepository.findByProvince_ProName("shanghai");
+        System.out.println(shanghai);
+        System.out.println("------");
+        Iterable<Country> a = countryRepository.findByFlag(Set.of("a"));
+        System.out.println(a);
+        System.out.println("------");
+        Iterable<Country> allCountry = countryService.findAllCountry();
+        System.out.println(allCountry);
+        System.out.println("------");
+        Iterable<Country> china = countryService.findByName("china");
+        System.out.println(china);
     }
 }
 ```
@@ -137,37 +181,8 @@ class RedisSearchSpringbootApplicationTests {
 5. now, you can open your redis-insight and click the refresh button. Bingo~
 ![data-01](picture/insight-01.png)
 
-6. let's add more data into redis
-```java
-@SpringBootTest
-class RedisSearchSpringbootApplicationTests {
-
-    @Autowired
-    private SchoolRepository schoolRepository;
-
-    @Test
-    void initData() {
-        schoolRepository.deleteAll();
-
-        Student zhangsan = new Student("张三", 18);
-        School qdScience = new School("1001", "青岛科技大学", 50, "青岛市", zhangsan, Set.of("机械", "化工"));
-
-        Student lisi = new Student("lisi", 20);
-        School sdCollege = new School("1002", "山东大学", 60, "济南市", lisi, Set.of("音乐", "美术"));
-
-        Student wangwu = new Student("wangwu", 22);
-        School ytCollege = new School("1003", "烟台大学", 70, "烟台市", wangwu, Set.of("跳高", "跳远"));
-
-        Student zhaoliu = new Student("zhaoliu", 24);
-        School rzCollege = new School("1004", "日照大学", 80, "日照市", zhaoliu, Set.of("语文", "数学"));
-
-        Student xiaoming = new Student("xiaoming", 26);
-        School hzCollege = new School("1005", "菏泽大学", 90, "菏泽市", xiaoming, Set.of("政治", "英语"));
-
-
-        schoolRepository.saveAll(List.of(qdScience, sdCollege, ytCollege, rzCollege, hzCollege));
-    }
-}
-```
-
 ### Finally, enjoy the redis-stack
+
+1. run the test method, and you will get what you want
+
+![img.png](picture/result.png)
