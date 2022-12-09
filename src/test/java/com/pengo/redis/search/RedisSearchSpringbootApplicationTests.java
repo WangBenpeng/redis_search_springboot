@@ -1,8 +1,8 @@
 package com.pengo.redis.search;
 
-import com.pengo.redis.search.entity.School;
-import com.pengo.redis.search.entity.Student;
-import com.pengo.redis.search.mapper.SchoolRepository;
+import com.pengo.redis.search.entity.*;
+import com.pengo.redis.search.mapper.CountryRepository;
+import com.pengo.redis.search.service.CountryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,28 +14,45 @@ import java.util.Set;
 class RedisSearchSpringbootApplicationTests {
 
     @Autowired
-    private SchoolRepository schoolRepository;
+    private CountryRepository countryRepository;
+    @Autowired
+    private CountryService countryService;
 
     @Test
-    void initData() {
-        schoolRepository.deleteAll();
+    void initCountry() {
+        countryRepository.deleteAll();
 
-        Student zhangsan = new Student("张三", 18);
-        School qdScience = new School("1001", "青岛科技大学", 50, "青岛市", zhangsan, Set.of("机械", "化工"));
+        Country c1 = new Country();
+        Province p1 = new Province();
+        p1.setProName("shanghai");
+        p1.setArea(100);
+        c1.setName("china");
+        c1.setProvince(p1);
+        c1.setFlag(Set.of("a", "b", "c"));
 
-        Student lisi = new Student("lisi", 20);
-        School sdCollege = new School("1002", "山东大学", 60, "济南市", lisi, Set.of("音乐", "美术"));
+        Country c2 = new Country();
+        Province p2 = new Province();
+        p2.setProName("beijing");
+        p2.setArea(200);
+        c2.setName("china2");
+        c2.setProvince(p2);
+        c2.setFlag(Set.of("d", "e", "f"));
 
-        Student wangwu = new Student("wangwu", 22);
-        School ytCollege = new School("1003", "烟台大学", 70, "烟台市", wangwu, Set.of("跳高", "跳远"));
+        countryRepository.saveAll(List.of(c1, c2));
+    }
 
-        Student zhaoliu = new Student("zhaoliu", 24);
-        School rzCollege = new School("1004", "日照大学", 80, "日照市", zhaoliu, Set.of("语文", "数学"));
-
-        Student xiaoming = new Student("xiaoming", 26);
-        School hzCollege = new School("1005", "菏泽大学", 90, "菏泽市", xiaoming, Set.of("政治", "英语"));
-
-
-        schoolRepository.saveAll(List.of(qdScience, sdCollege, ytCollege, rzCollege, hzCollege));
+    @Test
+    void testCountry() {
+        Iterable<Country> shanghai = countryRepository.findByProvince_ProName("shanghai");
+        System.out.println(shanghai);
+        System.out.println("------");
+        Iterable<Country> a = countryRepository.findByFlag(Set.of("a"));
+        System.out.println(a);
+        System.out.println("------");
+        Iterable<Country> allCountry = countryService.findAllCountry();
+        System.out.println(allCountry);
+        System.out.println("------");
+        Iterable<Country> china = countryService.findByName("china");
+        System.out.println(china);
     }
 }

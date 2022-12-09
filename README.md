@@ -56,6 +56,7 @@ docker-compose up -d
     </dependencies>
 ```
 2. create School and Student model:
+
 ```java
 @NoArgsConstructor
 @AllArgsConstructor
@@ -70,7 +71,7 @@ public class School {
     @Searchable
     private String name;
 
-    @Searchable
+    @Indexed
     private Integer history;
 
     @Searchable
